@@ -1,5 +1,7 @@
+from tqdm import tqdm
+
+import argparse
 import socket
-import sys
 import threading
 import time
 import os
@@ -82,19 +84,18 @@ class Sender:
                 time.sleep(0.00000000000000000000001)
                 
                 print('* Sending File')
-                i = 0
                 data_sent = 0
+                progress = tqdm(range(file_size), desc=f"Sending {file_name}", unit='B', unit_scale=True, unit_divisor=1024)
                 while data_sent < file_size:
                     file_data = f.read(self.__buff_size)
                     conn.sendall(file_data)
                     data_sent += self.__buff_size
-                    i += 1
-                    # TODO: Update progress bar
-                print(i, data_sent)
+                    progress.update(self.__buff_size)
+                progress.desc = f'{file_name} Sent'
+                progress.close()
 
             print('* Waiting for DACK')
             data = conn.recv(self.__buff_size)
-            print(data)
             if data == b'DACK':
                 conn.send(b'Closing Conn')
                 conn.close()
@@ -122,6 +123,7 @@ class Sender:
             conn, addr =self.__server.accept()
             threading.Thread(target=self.__handle_conn, args=(conn, addr,) ).start()
             break
+
 
 class Client:
     '''
@@ -194,11 +196,14 @@ class Client:
 
         print('* Receiving File contents')
         file_data = b''
+        progress = tqdm(range(file_size), desc=f"Receiving {file_name}", unit='B', unit_scale=True, unit_divisor=1024)
         while len(file_data) < file_size:
             data = self.__client.recv(self.__buff_size)
             file_data += data
-            print(data)
-        
+            progress.update(self.__buff_size)
+        progress.desc = f"{file_name} Received"
+        progress.close()
+
         print('* Writing received data to the file')
         file_path = os.path.join(self.__save_dir, file_name)
         print(file_path)
@@ -218,16 +223,99 @@ class Client:
 
 
 if __name__ == "__main__":
-    if sys.argv[1] == 'send':
-        print(f"[*] Starting Sender on 0.0.0.0:9898 accepting 5 simulatenous connections with buffer size 4096 and 60seconds timeout")
-        Sender(file_path=r"test.txt",timeout=None).start()
-    elif sys.argv[1] == 'recv':
-        Client(save_path='test_dir').receive()
+    parser = argparse.ArgumentParser(
+        description='Share files over the network between peers',
+    )
+
+    parser.add_argument(
+        '-i',
+        '--ip',
+        type=str,
+        default='localhost',
+        dest='ip',
+        help='ip address of the sender'
+    )
+
+    parser.add_argument(
+        '-p',
+        '--port',
+        type=int,
+        default=9898,
+        dest='port',
+        help='port of the sender',
+    )
+
+    parser.add_argument(
+        '-buff',
+        '--buff-size',
+        type=int,
+        default=1048576,
+        dest='buff_size',
+        help='Buffer Size',
+    )
+
+    parser.add_argument(
+        '-t',
+        '--type',
+        type=str,
+        default='send',
+        choices=['send', 'recv'],
+        dest='type',
+        help='Peer Type: send/recv',
+    )
+
+    parser.add_argument(
+        '-d',
+        '--directory',
+        type=str,
+        default=os.path.join(os.getcwd(),'saved_files'),
+        dest='save_dir',
+        help='directory to save received files',
+    )
+
+    parser.add_argument(
+        '-f',
+        '--file',
+        type=str,
+        default=None,
+        dest='file_path',
+        help='path of the file to be sent',
+    )
+
+    parser.add_argument(
+        '-to',
+        '--timeout',
+        type=float,
+        default=None,
+        dest='timeout',
+        help='connection timeout',
+    )
+
+    parser.add_argument(
+        '-conn',
+        '--connections',
+        type=int,
+        default=5,
+        dest='connections',
+        help='number of simultaneous connections for sender',
+    )
+
+    args = parser.parse_args()
+
+    ip = args.ip
+    port = args.port
+    buff_size = args.buff_size
+    peer_type = args.type
+    save_dir = args.save_dir
+    file_path = args.file_path
+    connections = args.connections
+    timeout = args.timeout
+
+    if peer_type == 'send' and file_path is not None and os.path.exists(file_path):
+        print(f"[*] Starting Sender on {ip}:{port} to send {file_path} file with {connections} connections.")
+        Sender(file_path=file_path, ip=ip, port=port, connections=connections, buff_size=buff_size, timeout=timeout).start()
+    elif peer_type == 'recv':
+        print(f"[*] Connecting to {ip}:{port} with {buff_size} buffer size")
+        Client(save_path=save_dir, ip=ip, port=port, buff_size=buff_size, timeout=timeout).receive()
     else:
-        import textwrap
-        print(textwrap.dedent('''
-        Transfer module
-        python3 -m P2Psharing.transfer [send|recv] [ip] [port]
-        
-        python3 -m P2Psharing.transfer sender 192.168.10.1 9898 myfile.txt
-        python3 -m P2Psharing.transfer recv 192.168.10.1 9898'''))
+        parser.print_help()
