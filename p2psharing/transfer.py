@@ -69,27 +69,32 @@ class Sender:
             # conn.send(b'Sending file')
 
             with open(self.__file, 'rb') as f:
-                # file_data = f.read()
-                # file_data = base64.b64encode(file_data)
-                # file_size = str(len(file_data))
                 file_size = os.path.getsize(self.__file)
                 print(file_size)
                 
                 # send file name and date
                 print('* Sending File name')
-                conn.send(self.__file.encode('utf-8'))
+                if os.name == 'nt':
+                    file_name = self.__file.split('\\')[-1]
+                else:
+                    file_name = self.__file.split('/')[-1]
+                conn.send(file_name.encode('utf-8'))
+                
                 print('* Sending File size')
                 conn.send(str(file_size).encode('utf-8'))
                 time.sleep(0.00000000000000000000001)
                 
                 print('* Sending File')
+                i = 0
                 data_sent = 0
                 while data_sent < file_size:
                     file_data = f.read(self.__buff_size)
                     file_data = base64.b64encode(file_data)
                     conn.sendall(file_data)
                     data_sent += self.__buff_size
+                    i += 1
                     # TODO: Update progress bar
+                print(i, data_sent)
 
             print('* Waiting for DACK')
             data = conn.recv(self.__buff_size)
@@ -181,6 +186,7 @@ class Client:
         self.__client.send(b'REC')
         
         # accept file data
+        # TODO: Read complete file at once and then calculate base64 len and then send data
         print('* Receiving File name')
         file_name = self.__client.recv(self.__buff_size).decode('utf-8')
         print(file_name)
@@ -194,13 +200,15 @@ class Client:
         file_data = b''
         while len(file_data) < file_size:
             data = self.__client.recv(self.__buff_size)
-            if len(data) <= 0:
-                break
             file_data += data
             print(data)
-        
         file_data = base64.b64decode(file_data)
-        print(file_data)
+        
+        print('* Writing received data to the file')
+        file_path = os.path.join(self.__save_dir, file_name)
+        print(file_path)
+        with open(file_path, 'wb') as f:
+            f.write(file_data)
 
         print('* Sending DACK packet')
         self.__client.send(b'DACK')
@@ -217,7 +225,7 @@ class Client:
 if __name__ == "__main__":
     if sys.argv[1] == 'send':
         print(f"[*] Starting Sender on 0.0.0.0:9898 accepting 5 simulatenous connections with buffer size 4096 and 60seconds timeout")
-        Sender(file_path='test.txt',timeout=None).start()
+        Sender(file_path=r"test.txt",timeout=None).start()
     elif sys.argv[1] == 'recv':
         Client(save_path='test_dir').receive()
     else:
