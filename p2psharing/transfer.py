@@ -1,4 +1,3 @@
-import base64
 import socket
 import sys
 import threading
@@ -66,8 +65,6 @@ class Sender:
         data = conn.recv(self.__buff_size)
         print(data)
         if data == b'REC':
-            # conn.send(b'Sending file')
-
             with open(self.__file, 'rb') as f:
                 file_size = os.path.getsize(self.__file)
                 print(file_size)
@@ -89,7 +86,6 @@ class Sender:
                 data_sent = 0
                 while data_sent < file_size:
                     file_data = f.read(self.__buff_size)
-                    file_data = base64.b64encode(file_data)
                     conn.sendall(file_data)
                     data_sent += self.__buff_size
                     i += 1
@@ -163,6 +159,7 @@ class Client:
         if not os.path.exists(self.__save_dir):
             os.mkdir(self.__save_dir)
 
+
     def receive(self,) -> bool:
         '''
         Description:
@@ -186,7 +183,6 @@ class Client:
         self.__client.send(b'REC')
         
         # accept file data
-        # TODO: Read complete file at once and then calculate base64 len and then send data
         print('* Receiving File name')
         file_name = self.__client.recv(self.__buff_size).decode('utf-8')
         print(file_name)
@@ -202,7 +198,6 @@ class Client:
             data = self.__client.recv(self.__buff_size)
             file_data += data
             print(data)
-        file_data = base64.b64decode(file_data)
         
         print('* Writing received data to the file')
         file_path = os.path.join(self.__save_dir, file_name)
