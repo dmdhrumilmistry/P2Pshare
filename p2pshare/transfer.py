@@ -60,30 +60,23 @@ class Sender:
         if print_conn_info:
             print(f"* Incoming from {addr[0]}:{addr[1]}")
 
-        print('* Sending ACK')
         conn.send(b'ACK')
 
-        print('* Receiving REC packet')
         data = conn.recv(self.__buff_size)
-        print(data)
         if data == b'REC':
             with open(self.__file, 'rb') as f:
                 file_size = os.path.getsize(self.__file)
-                print(file_size)
                 
                 # send file name and date
-                print('* Sending File name')
                 if os.name == 'nt':
                     file_name = self.__file.split('\\')[-1]
                 else:
                     file_name = self.__file.split('/')[-1]
                 conn.send(file_name.encode('utf-8'))
                 
-                print('* Sending File size')
                 conn.send(str(file_size).encode('utf-8'))
                 time.sleep(0.00000000000000000000001)
                 
-                print('* Sending File')
                 data_sent = 0
                 progress = tqdm(range(file_size), desc=f"Sending {file_name}", unit='B', unit_scale=True, unit_divisor=1024)
                 while data_sent < file_size:
@@ -94,7 +87,6 @@ class Sender:
                 progress.desc = f'{file_name} Sent'
                 progress.close()
 
-            print('* Waiting for DACK')
             data = conn.recv(self.__buff_size)
             if data == b'DACK':
                 conn.send(b'Closing Conn')
@@ -178,23 +170,16 @@ class Client:
         '''
         self.__client.connect((self.__ip, self.__port))
         data = self.__client.recv(self.__buff_size)
-        print(data)
 
         # send REC packet to confirm reception
-        print('* Sending REC packet')
         self.__client.send(b'REC')
         
         # accept file data
-        print('* Receiving File name')
         file_name = self.__client.recv(self.__buff_size).decode('utf-8')
-        print(file_name)
 
-        print('* Receiving File size')
         file_size = self.__client.recv(self.__buff_size)
-        print(file_size)
         file_size = int(file_size)
 
-        print('* Receiving File contents')
         file_data = b''
         progress = tqdm(range(file_size), desc=f"Receiving {file_name}", unit='B', unit_scale=True, unit_divisor=1024)
         while len(file_data) < file_size:
@@ -204,19 +189,14 @@ class Client:
         progress.desc = f"{file_name} Received"
         progress.close()
 
-        print('* Writing received data to the file')
         file_path = os.path.join(self.__save_dir, file_name)
-        print(file_path)
         with open(file_path, 'wb') as f:
             f.write(file_data)
 
-        print('* Sending DACK packet')
         self.__client.send(b'DACK')
         
-        print('* Receiving closing packet')
         data = self.__client.recv(self.__buff_size)
         
-        print('* Closing Client socket')
         self.__client.close()
 
         return True
