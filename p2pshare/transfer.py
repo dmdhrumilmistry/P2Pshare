@@ -62,6 +62,7 @@ class Sender:
 
         conn.send(b'ACK')
 
+        # recv REC 
         data = conn.recv(self.__buff_size)
         if data == b'REC':
             with open(self.__file, 'rb') as f:
@@ -73,8 +74,13 @@ class Sender:
                 else:
                     file_name = self.__file.split('/')[-1]
                 conn.send(file_name.encode('utf-8'))
+                # recv ACK
+                data = conn.recv(self.__buff_size)
+                
                 
                 conn.send(str(file_size).encode('utf-8'))
+                # recv ACK
+                data = conn.recv(self.__buff_size)
                 time.sleep(0.00000000000000000000001)
                 
                 data_sent = 0
@@ -169,6 +175,7 @@ class Client:
             bool
         '''
         self.__client.connect((self.__ip, self.__port))
+        # recv ack
         data = self.__client.recv(self.__buff_size)
 
         # send REC packet to confirm reception
@@ -176,8 +183,10 @@ class Client:
         
         # accept file data
         file_name = self.__client.recv(self.__buff_size).decode('utf-8')
+        self.__client.send(b'ACK')
 
         file_size = self.__client.recv(self.__buff_size)
+        self.__client.send(b'ACK')
         file_size = int(file_size)
 
         file_data = b''
