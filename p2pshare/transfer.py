@@ -117,10 +117,12 @@ class Sender:
         '''
         self.__server.bind((self.__ip, self.__port))
         self.__server.listen(self.__connections)
-        while True:
-            conn, addr =self.__server.accept()
+        connected = 0
+        while connected < self.__connections:
+            conn, addr = self.__server.accept()
             threading.Thread(target=self.__handle_conn, args=(conn, addr,) ).start()
-            break
+            connected += 1
+        self.__server.close()
 
 
 class Client:
