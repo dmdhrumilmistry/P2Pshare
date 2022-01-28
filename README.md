@@ -20,12 +20,21 @@ Peer to Peer file transfer over the network
     ```
     pip3 install -e .
     ```
-    
+
+## Create Standalone
+- Clone repo and change to repo directory
+- Using pyinstaller
+  ```bash
+  pip3 install pyinstaller
+  pyinstaller --onefile -n p2pshare/__main__.py
+  ```
+- Get executable from `dist` directory
+
 ## Usage
 
-$ `python3 -m p2pshare.transfer`
+$ `python3 -m p2pshare`
 ```
-usage: transfer.py [-h] [-i IP] [-p PORT] [-buff BUFF_SIZE] [-t {send,recv}] [-d SAVE_DIR] [-f FILE_PATH]
+usage: p2pshare [-h] [-i IP] [-p PORT] [-buff BUFF_SIZE] [-t {send,recv}] [-d SAVE_DIR] [-f FILE_PATH]
                    [-to TIMEOUT] [-conn CONNECTIONS]
 
 Share files over the network between peers
@@ -47,9 +56,12 @@ options:
   -conn CONNECTIONS, --connections CONNECTIONS
                         number of simultaneous connections for sender
 ```
-
 - examples
   - Send File
-  `python3 -m p2pshare.transfer -t send -ip 192.168.10.27 -p 9898 -f myfile.ext`
+  `python3 -m p2pshare -t send -ip 192.168.10.27 -p 9898 -f myfile.ext`
   - Receive File
-  `python3 -m p2pshare.transfer -t recv -ip 192.168.10.27 -p 9898 -d /home/user/Downloads`
+  `python3 -m p2pshare -t recv -ip 192.168.10.27 -p 9898 -d /home/user/Downloads`
+  
+
+## TODO
+- Update README with instructions to transfer files over the internet using ngrok
