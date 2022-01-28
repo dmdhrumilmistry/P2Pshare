@@ -21,4 +21,7 @@ setup(
         'wheel',
         'tqdm',
     ],
+    entry_points = {
+        'console_scripts' : ['p2pshare = p2pshare.__main__:main'],
+    },
 )

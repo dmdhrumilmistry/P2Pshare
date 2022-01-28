@@ -213,8 +213,22 @@ class Client:
         return True
 
 
-if __name__ == "__main__":
+def start_command_line():
+    '''
+    Description:
+    ------------
+        Starts command line wrapper for p2pshare.transfer module
+
+    Args:
+    ------------
+        None
+
+    Returns:
+    ------------
+        None
+    '''
     parser = argparse.ArgumentParser(
+        prog='p2pshare',
         description='Share files over the network between peers',
     )
 
@@ -286,7 +300,7 @@ if __name__ == "__main__":
         '-conn',
         '--connections',
         type=int,
-        default=5,
+        default=1,
         dest='connections',
         help='number of simultaneous connections for sender',
     )
